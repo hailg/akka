@@ -233,7 +233,7 @@ private[akka] class Mailboxes(
       .withFallback(defaultMailboxConfig)
   }
 
-  private var stashCapacityCache = new AtomicReference[Map[String, Int]](Map.empty[String, Int])
+  private val stashCapacityCache = new AtomicReference[Map[String, Int]](Map.empty[String, Int])
   private val defaultStashCapacity: Int =
     stashCapacityFromConfig(Dispatchers.DefaultDispatcherId, Mailboxes.DefaultMailboxId)
 
@@ -242,8 +242,8 @@ private[akka] class Mailboxes(
    */
   private[akka] final def stashCapacity(dispatcher: String, mailbox: String): Int = {
 
-    @tailrec def updateCache(cache: Map[String, Int], key: String, value: Int): Unit = {
-      if (!stashCapacityCache.compareAndSet(cache, cache.updated(key, value)))
+    @tailrec def updateCache(cache: Map[String, Int], key: String, value: Int): Boolean = {
+      stashCapacityCache.compareAndSet(cache, cache.updated(key, value)) ||
         updateCache(stashCapacityCache.get, key, value) // recursive, try again
     }
 
