@@ -502,8 +502,9 @@ private[stream] final class GraphInterpreter(
    */
   def execute(eventLimit: Int): Unit = {
     if (Debug) println(s"$Name ---------------- EXECUTE (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
-    val previousInterpreter = currentInterpreterOrNull
-    setCurrentInterpreter(this)
+    val currentInterpreterHolder = _currentInterpreter.get()
+    val previousInterpreter = currentInterpreterHolder(0)
+    currentInterpreterHolder(0) = this
     try {
       var eventsRemaining = eventLimit
       while (eventsRemaining > 0 && queueTail != queueHead) {
@@ -518,7 +519,7 @@ private[stream] final class GraphInterpreter(
         eventsRemaining -= 1
       }
     } finally {
-      setCurrentInterpreter(previousInterpreter)
+      currentInterpreterHolder(0) = previousInterpreter
     }
     if (Debug) println(s"$Name ---------------- $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
     // TODO: deadlock detection
